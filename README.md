@@ -1,8 +1,30 @@
-# WPA2 核心计算性能测试（待批准）
+# WPA2 计算性能测试：Windows RTX 3060 / Mac / RHEL 8
 
 本目录独立于已有的破解工具。当前只有只读环境检查，不安装依赖、不联网、不启动 benchmark，也不改系统配置。检查脚本仅依赖 Python 标准库，语法兼容 Python 3.6+；外部命令缺失或失败会记录在 JSON 中。
 
-## 第一步：最少环境检查命令
+当前目标见 [OBJECTIVE.md](OBJECTIVE.md)：优先在 Windows 游戏本的 RTX 3060 上评估 WPA2 模式 22000 的实际吞吐，约 50% 平均负载为目标，优先保证电脑交互流畅。上传仓库已获授权；运行新的重负载测试仍须先确认方案。
+
+## Windows 游戏本：clone 后从这里开始
+
+在 PowerShell 中运行：
+
+```powershell
+git clone https://github.com/shleodai/wifi_tool.git
+cd wifi_tool
+py -3 check_env.py --output windows-rtx3060-env.json
+```
+
+如果没有 `py` 但 `python` 可用，将最后一行改为 `python check_env.py --output windows-rtx3060-env.json`。
+
+检查不需要 pip 包或管理员权限，不启动 GPU 计算。报告会包含 Windows CPU/内存/系统、显示适配器、NVIDIA 驱动与显存查询（命令可用时），以及 Python/OpenSSL。macOS/Linux 专属检查在 Windows 上可能标为不可用，这是预期行为。`nvidia-smi` 缺失不代表没有 NVIDIA GPU。
+
+回传报告后确定 Hashcat 安装及设备选择。使用原生 Windows Hashcat，不通过 WSL 使用游戏本 GPU。官方工具下载入口为 [hashcat.net](https://hashcat.net/hashcat/)，下载或安装前先确认已有驱动与运行时；不要先安装大型 CUDA 工具链。工具解压到自己可写的目录，不提交二进制到仓库。
+
+**待批准的 GPU 测试方案：** 从 `-w 1` 的低工作负载配置开始，使用合成测试数据和 30 秒短测；根据 GPU 监测与桌面流畅度决定是否增加计算/暂停调度。`-w 1` 不代表利用率被限制到 50%，占空比也只限制平均工作时间，无法保证瞬时占用。首次不要直接启动无限时或满载基准。
+
+此阶段不需要密码字典或真实握手。原始抓包、目标握手、恢复结果及机器报告都不随 GitHub 同步；以后如需在另一台机器做真实网络测试，单独传输所需文件。
+
+## RHEL 8：最少环境检查命令
 
 将 `check_env.py` 复制到服务器自己的可写目录，然后在该目录运行：
 
@@ -37,4 +59,4 @@ JSON 包含 CPU 型号和拓扑、进程 affinity、内存、Python 与 OpenSSL�
 
 服务器结果除以 1,746 可表示这两次 Python 测量的吞吐比，必须同时列出负载、进程数、环境与计时口径；不称为硬件精确加速比。Hashcat 模式 22000 与 Python 核心派生测试口径不同，不直接计算精确 GPU 加速比。必要时使用同一获批脚本在两台机器重新测量。
 
-下一步：确认环境与具体参数，然后等待你批准，再实现和提供 benchmark 的运行命令。服务器上的脚本始终由你手动复制和运行。
+下一步：先在 Windows 游戏本运行只读环境检查，确认设备与限载参数，再批准、实现和运行 GPU benchmark。RHEL 8 的无管理员权限、标准库优先方案继续保留；服务器上的脚本由你手动运行。

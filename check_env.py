@@ -105,6 +105,23 @@ def collect():
         pbkdf_backend = getattr(getattr(hashlib, 'pbkdf2_hmac', None), '__module__', None)
     except ImportError:
         backend, pbkdf_backend = None, None
+    windows_inventory = None
+    if platform.system() == 'Windows':
+        windows_inventory = {
+            'cpu_memory_os': command([
+                'powershell.exe', '-NoProfile', '-NonInteractive', '-Command',
+                "$ErrorActionPreference='Stop'; "
+                "@{processors=@(Get-CimInstance Win32_Processor | Select-Object Name,NumberOfCores,NumberOfLogicalProcessors); "
+                "computer=(Get-CimInstance Win32_ComputerSystem | Select-Object TotalPhysicalMemory); "
+                "os=(Get-CimInstance Win32_OperatingSystem | Select-Object Caption,Version)} | ConvertTo-Json -Depth 4"
+            ]),
+            'display_adapters': command([
+                'powershell.exe', '-NoProfile', '-NonInteractive', '-Command',
+                "$ErrorActionPreference='Stop'; "
+                "Get-CimInstance Win32_VideoController | Select-Object Name,DriverVersion,AdapterRAM | ConvertTo-Json"
+            ]),
+            'note': 'Win32_VideoController AdapterRAM may be inaccurate; prefer nvidia-smi for NVIDIA VRAM.'
+        }
     return {
         "schema_version": 1,
         "timestamp_utc": datetime.datetime.now(datetime.timezone.utc).isoformat(),
@@ -122,6 +139,7 @@ def collect():
         "pci_inventory": command(['lspci', '-nn']),
         "gpu_devices": sorted(glob.glob('/dev/nvidia*') + glob.glob('/dev/dri/*')
                               + glob.glob('/dev/kfd')),
+        "windows_inventory": windows_inventory,
         "nvidia_inventory": command(['nvidia-smi', '--query-gpu=name,driver_version,memory.total',
                                      '--format=csv,noheader']),
         "runtime_library_inventory": command(['ldconfig', '-p']),
