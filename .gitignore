@@ -16,3 +16,5 @@ tools/
 *.restore
 passwords.txt
 rockyou.txt
+local-handoff/
+!artifacts/apollo.hc22000
